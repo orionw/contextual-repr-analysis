@@ -24,7 +24,7 @@ def main():
         # Remove contextualizer from dataset reader params
         dataset_reader_params.pop("contextualizer", None)
         # Set "include_raw_tokens" to true if it is false
-        # dataset_reader_params["include_raw_tokens"] = True
+        dataset_reader_params["include_raw_tokens"] = True
         # Deepcopy so dataset_reader_params is not modified
         train_reader = DatasetReader.from_params(deepcopy(dataset_reader_params))
 
@@ -43,7 +43,7 @@ def main():
         # Remove contextualizer from dataset reader params
         evaluation_reader_params.pop("contextualizer", None)
         # Set "include_raw_tokens" to true if it is false
-        # evaluation_reader_params["include_raw_tokens"] = True
+        evaluation_reader_params["include_raw_tokens"] = True
         evaluation_reader = DatasetReader.from_params(deepcopy(evaluation_reader_params))
 
         validation_data_path = params.get('validation_data_path', None)

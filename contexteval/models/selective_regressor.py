@@ -252,6 +252,7 @@ class SelectiveRegressor(Model):
         if labels is not None:
             # Calculate masked SmoothL1Loss
             # Shape: (batch_size, num_label_indices)
+            labels = labels.unsqueeze(-1).float() # TODO: why do I need this
             per_prediction_loss = self.loss(predictions, labels)
             # Mask the per_prediction_loss and take the masked average
             masked_per_prediction_loss = per_prediction_loss * label_mask.float()

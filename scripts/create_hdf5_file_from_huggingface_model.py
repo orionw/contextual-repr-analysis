@@ -77,7 +77,7 @@ def load_model_and_write_hdf5(args: argparse.Namespace):
     print("Loading model and tokenizer")
     model_details = MODELS[args.model_name]
     weight_path = model_details[2] if args.model_weights is None else args.model_weights
-    model = model_details[0].from_pretrained(weight_path)
+    model = model_details[0].from_pretrained(weight_path, output_hidden_states=True)
     tokenizer = model_details[1].from_pretrained(weight_path)
 
     if args.cuda:
@@ -113,15 +113,24 @@ def load_model_and_write_hdf5(args: argparse.Namespace):
             with torch.no_grad():
                 if args.cuda:
                     input_ids = input_ids.cuda()
-                last_hidden_states = model(input_ids)[0].squeeze(0)  # Models outputs are now tuples
+                last_hidden_state, pooled_output, all_layers  = model(input_ids)
+                embedding_output, layer_output = all_layers[0], all_layers[1:]
+                if args.all_layers:
+                    representation = torch.cat(list(layer_output), dim=0)
+                else:
+                    representation = last_hidden_state
+
             # use mapping of token -> ids to sum up word_pieces and discard [sep][cls] tokens
-            no_special_tokens = last_hidden_states[torch.tensor(keep_mask).nonzero().squeeze(-1)]
             # get the indexes corresponding to each token.  Sum the wordpiece tokens and then unsqueeze to get (1, hidden_dim) for each token, then concat together
-            vectors = torch.cat([no_special_tokens.index_select(0, torch.tensor(values).cuda()).sum(dim=0).unsqueeze(0) for values in token_to_subword_mapping.values()], dim=0)
-            assert vectors.shape[0] == len(sentence_tokens), "error in shapes"
+            no_special_tokens = representation[:, torch.tensor(keep_mask).nonzero().squeeze(-1)]
+            # vectors shape (seq_len, num_layers, dim_embedding)
+            vectors = torch.cat([no_special_tokens.index_select(1, torch.tensor(values).cuda()).sum(dim=1).unsqueeze(0) for values in token_to_subword_mapping.values()], dim=0)
+            vectors = vectors.permute(1, 0, 2) # shape (n_layers, seq_len, dim_embedding)
+            assert vectors.shape[1] == len(sentence_tokens), "error in shapes"
             index_to_vector[str(index)] = vectors.detach().cpu().numpy()
 
     print("Writing saved vectors as an hdf5 file...")
+    print("Shapes of the written vectors are:", vectors.shape)
     make_hdf5_file(sentence_to_index, index_to_vector, args.output_path)
 
 
@@ -132,5 +141,6 @@ if __name__ == "__main__":
     parser.add_argument("output_path", help="the path you want to use to store the hdf5 file")
     parser.add_argument("--model_weights", help="the model weights you want to use, loaded from file", default=None)
     parser.add_argument("--cuda", action="store_true", help="use cuda to speed up the embedding process", default=False)
+    parser.add_argument("--all_layers", action="store_true", help="store each layer, instead of just the last", default=False)
     args = parser.parse_args()
     load_model_and_write_hdf5(args)

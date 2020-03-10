@@ -100,4 +100,4 @@ class ConllXPOSDatasetReader(TaggingDatasetReader):
                 yield self.text_to_instance(
                     tokens,
                     token_representations,
-                    [x["pos"] for x in annotation])
+                    [x["coarse_pos"] for x in annotation])

@@ -34,7 +34,7 @@ def split_event_factuality(path_to_tsv: str):
             sentence = " ".join(raw_tokens)
             relevant_annotations = data_split[data_split["Sentence.ID"] == "en-ud-{}.conllu {}".format(split, index + 1)]
             for name, group_df in relevant_annotations.groupby("Pred.Token"):
-                happened = int((group_df["Happened"] == "true").all())
+                happened = int((group_df["Happened"] == True).all())
                 if happened == 0:
                     happened = -1
                 nan_mean_of_group = np.nanmean(group_df["Confidence"])

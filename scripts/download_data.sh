@@ -14,8 +14,8 @@ done
 
 # make splits
 cat all/wsj_{00,01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18}*  > wsj.train.conllx
-cat all/wsj_{19,20,21}*  > wsj.dev.conllx
-cat all/wsj_{22,23,24}*  > wsj.test.conllx
+cat all/wsj_{19,20,21}* > wsj.dev.conllx
+cat all/wsj_{22,23,24}* > wsj.test.conllx
 
 # python3 scripts/get_config_sentences.py --config-paths ./experiment_configs/bert_base_cased/ptb_pos_tagging.json --output-path ./data/pos/sentences_ptb.txt
 # python3 create_hdf5_file_from_huggingface_model.py bert ../data/pos/sentences_ptb.txt ../contextualizers/bert_base_cased/ptb_pos.hdf5 --cuda
@@ -45,6 +45,7 @@ git clone https://github.com/ginesam/semtagger.git
 cd semtagger
 cd data/
 echo 'export DIR_ROOT=$PWD' >> to_add.txt
+# the flags in the original script didn't work for me, but this made it work
 echo 'set -a' >> to_add.txt
 echo 'source config.sh' >> to_add.txt
 echo 'set +a' >> to_add.txt
@@ -93,8 +94,7 @@ cd ../
 # cd scripts/
 # python3 create_hdf5_file_from_huggingface_model.py bert ../data/event_factuality/sentences.txt ../contextualizers/bert_base_cased/event_factuality.hdf5 --cuda
 # cd ../
-# allennlp train experiment_configs/bert_base_cased/event_factuality.json -s factuality_train     --include-package contexteval
-# TODO: numbers seem a little low, something off?
+allennlp train experiment_configs/bert_base_cased/event_factuality.json -s factuality_train     --include-package contexteval
 
 
 ## Syntactic Chunking data (Chunk)
@@ -138,7 +138,6 @@ cd ../
 # allennlp train experiment_configs/bert_base_cased/grammatical_error_correction.json -s grammar_train --include-package contexteval 
 
 
-
 # Coordinate boundary / conjunct identification (Conj)
 cd coordination_boundary/
 git clone https://github.com/Jess1ca/CoordinationExtPTB.git
@@ -151,7 +150,7 @@ head -n +34446 PTB.ext > PTB.exe
 head -n +7381 PTB.ext > ../conjunct_id.dev
 tail -n +7381 PTB.ext > ../conjunct_id.test
 
-# TODO: how to split this?
+# TODO: how to join this?
 python3 scripts/get_config_sentences.py --config-paths experiment_configs/bert_base_cased/conjunct_identification.json --output-path ./data/coordination_boundary/sentences.txt
 # cd scripts/
 # python3 create_hdf5_file_from_huggingface_model.py bert ../data/adposition_supersenses/sentences.txt ../contextualizers/bert_base_cased/adposition_supersense_tagging.hdf5 --cuda
@@ -179,9 +178,17 @@ curl --remote-name-all https://lindat.mff.cuni.cz/repository/xmlui/bitstream/han
 cd ..
 
 
+
 # Coreference Arc Prediction
-https://conll.cemantix.org/2012/data.html
-# TODO
+cd coreference_resolution/
+# TBH, AI2 has the data already so I just grabbed it.  I think the script `complile_coref_data.sh` would be helpful 
+# in generating it once you get the LDC CoNLL data files
+# cp LDC files here
+# cd ../../scripts
+# bash complile_coref_data.sh ../data/coreference_resolution
+cd ../
+# TODO: negative sampling and then run
+
 
 # syntactic constituency ancestor tagging (GGParent)
 # not sure where this came from, just says PTB
