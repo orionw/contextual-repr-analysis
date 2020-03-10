@@ -18,8 +18,8 @@ cat all/wsj_{19,20,21}* > wsj.dev.conllx
 cat all/wsj_{22,23,24}* > wsj.test.conllx
 
 # python3 scripts/get_config_sentences.py --config-paths ./experiment_configs/bert_base_cased/ptb_pos_tagging.json --output-path ./data/pos/sentences_ptb.txt
-# python3 create_hdf5_file_from_huggingface_model.py bert ../data/pos/sentences_ptb.txt ../contextualizers/bert_base_cased/ptb_pos.hdf5 --cuda
-# allennlp train experiment_configs/bert_base_cased/ptb_pos_tagging.json -s ptb_train --include-package contexteval
+python3 create_hdf5_file_from_huggingface_model.py bert ../data/pos/sentences_ptb.txt ../contextualizers/bert_base_cased/ptb_pos.hdf5 --cuda
+allennlp train experiment_configs/bert_base_cased/ptb_pos_tagging.json -s ptb_train --include-package contexteval
 
 cd ../
 
