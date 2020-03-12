@@ -3,6 +3,8 @@ import json
 import glob
 import argparse
 import typing
+import random
+import time
 from collections import Counter, OrderedDict
 
 import pandas as pd
@@ -202,9 +204,16 @@ def load_model_and_write_hdf5(args: argparse.Namespace):
             index_to_vector[str(original_indexes[sent_num])] = vector.detach().cpu().numpy()
         cur_index += count
 
-    print("Writing saved vectors as an hdf5 file...")
+    print("Writing saved vectors as an hdf5 file to {}...".format(args.output_path))
     print("Shapes of the written vectors are:", vector.shape)
-    make_hdf5_file(sentence_to_index, index_to_vector, args.output_path)
+    repeats = 5
+    while (repeats > 0):
+        try:
+            make_hdf5_file(sentence_to_index, index_to_vector, args.output_path)
+            repeats = 0
+        except Exception as e:
+            time.sleep(random.randint(10, 40))
+            repeats -= 1
 
 
 if __name__ == "__main__":

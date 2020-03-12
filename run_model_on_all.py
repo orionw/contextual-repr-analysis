@@ -7,6 +7,7 @@ import subprocess
 import sys
 import shutil
 import copy
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
@@ -152,28 +153,28 @@ def run_probes(run_args: argparse.Namespace, config: typing.Dict[str, typing.Dic
 
         # create executable command and run probe
         executable_str_list = []
+        base_save_path = "{save_path}/{model_name}/{task_name}".format(task_name=name, save_path=run_args.temp_path, model_name=run_args.model_name)
         if run_args.n_layers > 1:
-            for layer_num in range(run_args.n_layers - 1):
+            for layer_num in range(run_args.n_layers):
                 execute_str = "allennlp train {config_path} -s {save_path}/{model_name}/{task_name}_{layer_num} --include-package contexteval" \
                                 .format(config_path=config_json_path, task_name=name, save_path=run_args.temp_path,
                                          layer_num=layer_num, model_name=run_args.model_name)
                 execute_str +=""" --overrides '{"dataset_reader": {"contextualizer": {"layer_num": %s}}, "validation_dataset_reader": {"contextualizer": {"layer_num": %s}}}'""" % (layer_num, layer_num)
-                executable_str_list.append(execute_str)
+                check_dir = base_save_path + "_{}".format(str(layer_num))
+                executable_str_list.append((check_dir, execute_str))
         else:
             execute_str = "allennlp train {config_path} -s {save_path}/{model_name}/{task_name} --include-package contexteval"\
                             .format(config_path=config_json_path, task_name=name, save_path=run_args.temp_path, model_name=run_args.model_name)
-            executable_str_list.append(execute_str)
-
-        base_save_path = "{save_path}/{model_name}/{task_name}".format(task_name=name, save_path=run_args.temp_path, model_name=run_args.model_name)
-        if run_args.n_layers > 1:
-            check_dir = base_save_path + "_{}".format(str(run_args.n_layers - 1))
-        else:
             check_dir = base_save_path
-        if not os.path.isdir(check_dir):
-            for execute_str in executable_str_list:
+            executable_str_list.append((check_dir, execute_str))
+        
+        for (check_dir, execute_str) in executable_str_list:
+            if not os.path.isdir(check_dir):
                 process = subprocess.Popen([execute_str], stdout=sys.stdout, stderr=sys.stderr, shell=True).wait()
-                if process != 0:
-                    raise Exception("Failed to execute {}, return code of {}".format(execute_str, process.returncode))
+                if (type(process) == int and process != 0) or (type(process) != int and process.returncode != 0):
+                    raise Exception("Failed to execute {}".format(execute_str))
+            else:
+                print("Already executed dir {}".format(check_dir))
 
         # cleanup
         clean_up_dir(run_args, base_save_path)
@@ -205,7 +206,10 @@ def get_probes_for_model_all_tasks(run_args: argparse.Namespace):
 
 
 def run_all_models_on_all_probes(run_args: argparse.Namespace):
-    for model_weights_path in glob.glob(os.path.join(run_args.saved_model_dir, "**", "**", "pytorch_model.bin")):
+    paths = list(Path(run_args.saved_model_dir).rglob("pytorch_model.bin"))
+    print("Running on paths", paths)
+    for file_path in paths:
+        model_weights_path = str(file_path)
         print("Running probes for model at {}".format(model_weights_path))
         cur_run_args = copy.deepcopy(run_args)
         cur_run_args.model_weights = "/".join(model_weights_path.split("/")[:-1])
